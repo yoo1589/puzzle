@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>index</title>
+<style>
+	table,td{border:1px solid gray;}
+	table {border-collapse: collapse;}
+	
+	#logout{
+		display: block
+	}
+	
+	#login {
+		display: none;
+	}
+	
+	#center{
+		display: table;
+		margin: 0 auto;
+	}
+
+	html, body
+	{
+	    height: 100%;
+	}
+	
+	body
+	{
+	    display: table;
+	    margin: 0 auto;
+	}
+	
+	.container
+	{
+	    height: 100%;
+	    display: table-cell;
+	    vertical-align: middle;
+	}
+</style>
+</head>
+<body>
+	<div id="center">
+		<h1>PUZZLE GAME</h1>
+	</div>
+	<div id="center">
+		<h2>puzzle -id : <span id="loginState"></span></h2>
+	</div>
+	<!-- 
+		SELECT * FROM report
+		ORDER BY timer ASC, count ASC
+		
+		[Top 10]
+		limit 10 
+		
+		[Todat Top 10]
+		WHERE 날짜함수(repory_date) == 날짜함수(now())
+		limit 10
+		
+		[My report list]
+		WHERE member_id=?
+	 -->
+	 <!-- 로그인 전 -->
+	 <div id="logout">
+	 	<div id="container">
+	 		<div id="center">
+	 			<button id="loginBtn">Login</button>
+	 		</div>
+	 	</div> 
+	 	<div id="container">
+	 		<div id="center">
+	 			<button id="joinBtn">Join</button>
+	 		</div>
+	 	</div>
+	 </div>
+	 
+	 <!-- 로그인 후 -->
+	 <div id="login">
+	 	<div id="container">
+	 		<div id="center">
+		 		<button id="gameStartBtn">Game start</button>
+		 		<button id="top10Btn">Top 10</button>
+				<button id="topTodayBtn">Today Top 10</button>
+				<button id="topMonthBtn">Month Top 10</button>
+			</div>
+	 	</div>
+	 	<div id="container">
+	 		<div id="center">
+		 		<button id="myReportBtn">My report list</button>
+		 		<button id="logoutBtn">Logout</button>
+				<button id="pwUpdateBtn">Password change</button>
+				<button id="idDeleteBtn">Member withdrawal</button>
+			</div>
+	 	</div>
+	 </div>
+</body>
+<div id="section">
+	<!-- Top10목록 보기 -->
+<div id="center">
+	<h2>RANK</h2>
+</div>
+	<div id="center">
+		<table border="1">
+		<thead>
+			<tr>
+				<th>member_id</th>
+				<th>count</th>
+				<th>timer</th>
+				<th>report_date</th>
+			</tr>
+		</thead>
+		<tbody id= "list">
+		
+		</tbody>
+		</table>
+	</div>
+</div>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+
+	let loginState = null;
+	$.ajax({
+		url : "/puzzle/GetSessionInfo",
+		method : "POST",
+		async : false, // 동기요청
+		success : function(json){
+			loginState = json;
+			//console.log("loginState : " + loginState) // 로그인 테스트
+		}
+	});
+	
+	//로그인화면 보여줄것
+	console.log("loginState//// :" + loginState);
+	
+	if(loginState != null) {
+		$("#login").css("display", "block");
+		$("#logout").css("display", "none");
+	} else {
+		$("#logout").css("display", "block");
+		$("#login").css("display", "none");
+	}
+	
+	// 상단에 로그인 id 표시
+	$("#loginState").text(loginState);
+	
+	// 게임시작
+	$("#gameStartBtn").click(function(){
+		if(loginState == null){
+			alert("로그인을 하세요");
+			location.href = "/puzzle/login.html";
+			return false;
+		} else{
+			location.href = "/puzzle/lolPuzzle.html";
+		}
+	});
+	
+	// 로그인
+	$("#loginBtn").click(function(){
+		location.href = "/puzzle/login.html";
+	});
+	
+	// TOP10
+	$("#top10Btn").click(function(){
+		$("#list").empty();
+		$.ajax({
+			url : "/puzzle/ReportListTop10",
+			method : "POST",
+			success : function(json){
+				alert("Top10 report list click");
+				console.log(json);
+				for(let i=0; i<json.length; i++){
+					let html = "<tr>";
+						html += "<td>"+json[i].memberId+"</td>";
+						html += "<td>"+json[i].count+"</td>";
+						html += "<td>"+json[i].timer+"</td>";
+						html += "<td>"+json[i].reportDate+"</td>";
+						html += "</tr>";
+				$("#list").append(html);
+				}
+			}
+		});	
+	});
+	
+	// TopToday
+	$("#topTodayBtn").click(function(){
+		$("#list").empty();
+		$.ajax({
+			url : "/puzzle/ReportListTopToday",
+			method : "POST",
+			success : function(json){
+				alert("TopToday report list click");
+				console.log(json);
+				for(let i=0; i<json.length; i++){
+					let html = "<tr>";
+						html += "<td>"+json[i].memberId+"</td>";
+						html += "<td>"+json[i].count+"</td>";
+						html += "<td>"+json[i].timer+"</td>";
+						html += "<td>"+json[i].reportDate+"</td>";
+						html += "</tr>";
+				$("#list").append(html);
+				}
+			}
+		});	
+	});
+	
+	// TopMonth
+	$("#topMonthBtn").click(function(){
+		$("#list").empty();
+		$.ajax({
+			url : "/puzzle/ReportListTopMonth",
+			method : "POST",
+			success : function(json){
+				alert("TopMonth report list click");
+				console.log(json);
+				for(let i=0; i<json.length; i++){
+					let html = "<tr>";
+						html += "<td>"+json[i].memberId+"</td>";
+						html += "<td>"+json[i].count+"</td>";
+						html += "<td>"+json[i].timer+"</td>";
+						html += "<td>"+json[i].reportDate+"</td>";
+						html += "</tr>";
+				$("#list").append(html);
+				}
+			}
+		});	
+	});
+	
+	// MyReport
+	$("#myReportBtn").click(function(){
+		$("#list").empty();
+		$.ajax({
+			url : "/puzzle/ReportListMyReport",
+			method : "POST",
+			data : {"loginState" : loginState},
+			success : function(json){
+				alert("my report list click");
+				console.log(json);
+				for(let i=0; i<json.length; i++){
+					let html = "<tr>";
+						html += "<td>"+json[i].memberId+"</td>";
+						html += "<td>"+json[i].count+"</td>";
+						html += "<td>"+json[i].timer+"</td>";
+						html += "<td>"+json[i].reportDate+"</td>";
+						html += "</tr>";
+				$("#list").append(html);
+				}
+			}
+		});	
+	});
+	
+	// 회원가입
+	$("#joinBtn").click(function(){
+		location.href = "/puzzle/join.html";
+	});
+	
+	// 로그아웃
+	$("#logoutBtn").click(function(){
+		if(confirm("로그아웃 하시겠습니까?")){
+			$.ajax({
+				url : "/puzzle/Logout",
+				method : "POST",
+				success : function(){
+					location.href = "/puzzle/index.html";
+				}
+			})
+		}
+	});
+	
+	// 비밀번호 수정
+	$("#pwUpdateBtn").click(function(){
+		if(loginState == null){
+			alert("로그인을 하세요");
+			location.href = "/puzzle/login.html";
+			return false;
+		} else{
+			location.href = "/puzzle/update.html";
+		}
+	});
+	
+	// 회원탈퇴
+	$("#idDeleteBtn").click(function(){
+		if(confirm("탈퇴하시겠습니까?")){
+			$.ajax({
+				url : "/puzzle/DeleteMember",
+				method : "POST",
+				data : {"loginState" : loginState},
+				success : function(){
+					$.ajax({
+						url : "/puzzle/Logout",
+						method : "POST",				
+						success : function(){
+							alert("탈퇴완료");
+							location.href = "/puzzle/index.html";
+						}
+					})
+				}
+			})
+		} else{
+			location.href="/puzzle/index.html";
+		}
+	});
+</script>
+</html>

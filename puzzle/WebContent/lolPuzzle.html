@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+	table,td{border:1px solid gray;}
+	table {border-collapse: collapse;}
+	
+	#center{
+		display: table;
+		margin: 0 auto;
+	}
+	
+	.container
+	{
+	    height: 100%;
+	    display: table-cell;
+	    vertical-align: middle;
+	}
+</style>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+</head>
+<body>
+	<div id="center">
+		<h2>puzzle -<span id="loginState"></span>-<span id=timer>0</span></h2>
+	</div>
+	<div id="center">
+		<table id="board">
+		</table>
+	</div>
+	<div id="center">
+		<button id="hintBtn">hint</button>
+		<button id="reStartBtn">Restart</button>
+		<button id="mainBtn">Main</button>
+		<button id="logoutBtn">Logout</button>
+	</div>
+	
+</body>
+<script>
+	// 4*4
+	let model1 = ["l01.jpg", "l01.jpg",
+				 "l02.jpg", "l02.jpg",
+				 "l03.jpg", "l03.jpg",
+				 "l04.jpg", "l04.jpg",
+				 "l05.jpg", "l05.jpg",
+				 "l06.jpg", "l06.jpg",
+				 "l07.jpg", "l07.jpg",
+				 "boom.jpg", "boom.jpg"
+				];
+	
+	// 5*5
+	let model2 = ["l01.jpg", "l01.jpg",
+				 "l02.jpg", "l02.jpg",
+				 "l03.jpg", "l03.jpg",
+				 "l04.jpg", "l04.jpg",
+				 "l05.jpg", "l05.jpg",
+				 "l06.jpg", "l06.jpg",
+				 "l07.jpg", "l07.jpg",
+				 "l08.jpg", "l08.jpg",
+				 "l09.jpg", "l09.jpg",
+				 "l10.jpg", "l10.jpg",
+				 "l11.jpg", "l11.jpg",
+				 "boom.jpg", "boom.jpg",
+				 "boom.jpg"
+				];
+
+	// 6*6
+	let model3 = ["l01.jpg", "l01.jpg",
+				 "l02.jpg", "l02.jpg",
+				 "l03.jpg", "l03.jpg",
+				 "l04.jpg", "l04.jpg",
+				 "l05.jpg", "l05.jpg",
+				 "l06.jpg", "l06.jpg",
+				 "l07.jpg", "l07.jpg",
+				 "l08.jpg", "l08.jpg",
+				 "l09.jpg", "l09.jpg",
+				 "l10.jpg", "l10.jpg",
+				 "l11.jpg", "l11.jpg",
+				 "l12.jpg", "l12.jpg",
+				 "l13.jpg", "l13.jpg",
+				 "l14.jpg", "l14.jpg",
+				 "l15.jpg", "l15.jpg",
+				 "l16.jpg", "l16.jpg",
+				 "boom.jpg", "boom.jpg",
+				 "boom.jpg", "boom.jpg"
+				];
+	$(document).ready(function(){
+		// sessionInfo 값을 동기 요청!
+		let loginState = null;
+		$.ajax({
+			url : "/puzzle/GetSessionInfo",
+			method : "POST",
+			async : false, // 동기요청
+			success : function(json){
+				loginState = json;
+				console.log("loginState : " + loginState) // 로그인 테스트
+			}
+		});
+		
+		// 로그인 확인
+		if(loginState == null){
+			location.href = "/puzzle/login.html";
+			return false;
+		}
+		
+		// 로그아웃
+		$("#logoutBtn").click(function(){
+			$.ajax({
+				url : "/puzzle/Logout",
+				method : "POST",
+				success : function(){
+					location.href = "/puzzle/index.html";
+				}
+			})
+		});
+
+		// 상단에 로그인 id, 시간초 표시
+		$("#loginState").text(loginState);
+		let timerNum = 0;
+		let clickNum = 0;
+		timer = setInterval(function(){
+			timerNum++;
+			$("#timer").text(timerNum);
+		}, 1000);
+		
+		// 스테이지가 바뀌어도 초기화되면안됨(1단계~3단계)
+		let total = 0; // 전체 클릭 횟수
+		
+		let stage = 1;
+// -----------------------------------------------------------------------------------------------------------------------------		
+		// stage1 이면 model1
+		model = model1;
+		console.log("model.length : ", model.length);
+		
+		// 모델 셔플
+		for(let i=0; i<100000; i++){
+			let ran = Math.floor(Math.random()*model.length);
+			let tmp = model[0];
+			model[0] = model[ran];
+			model[ran] = tmp;
+		}
+		
+		// 모델 출력
+		$("#board").empty();
+		$(model).each(function(index, item){
+			if(index % 4 == 0){
+				$("#board").append("<tr></tr>")
+			}
+			// 우클릭 방지: oncontextmenu='return false' 
+			// 드래그 방지: ondragstart='return false'
+			$("#board").append("<td oncontextmenu='return false' ondragstart='return false'><input class='pic' type='image' src='/puzzle/images/" + item + "'></td>");
+		});
+		
+		$(".pic").each(function(){
+			// -----0.1초를 0.001로 변경할것
+			$(this).animate({opacity: 0.1}, 3000); // 이슈 : 드레그 버그 - 사진 드레그시 보임 -> 우클릭방지로 해결
+		});
+		
+		
+		$("#hintBtn").click(function(){
+			$.ajax({
+				success:function(){
+					$(".pic").animate({opacity:1},1000);
+                 	$(".pic").animate({opacity:0},1000);
+				}
+			})
+		});
+		
+		
+		// 게임 변수 설정
+		let state = 0; // 0 or 1 or 2 - 선택x 선택1 선택2
+		let success = 0; // 맞춘 갯수
+		let onePic = null;
+		let twoPic = null;
+		let boom = 2;
+//------------------------------------------------------------------------------------------------------------------------------
+		$(document).on("click", ".pic", function(){ // 동적으로 생성된 태그에 이벤트 적용
+			console.log("---click---");
+			console.log("stage : ", stage);
+			console.log("total : ", total);
+			console.log("success : ", success);
+			total++;
+			state++;
+			
+			// 폭탄 그림을 고르면 index로 나가짐
+			if($(this).attr("src") == "/puzzle/images/boom.jpg" ) {
+				$.ajax({
+					success : function(){
+						alert("폭탄을 누르셨습니다.")
+						location.href = "/puzzle/index.html";
+					}
+				})     
+		    }
+			 
+			$(this).attr("disabled", true); // 더블클릭 방지			
+			
+			if(1 == state){
+				console.log("state 1");
+				$(this).animate({opacity: 1}, 1);
+				onePic = $(this);
+			} else if(2 == state){
+				console.log("state 2");
+				$(this).animate({opacity: 1}, 1);
+				twoPic = $(this);
+				
+				if($(onePic).attr("src") == $(twoPic).attr("src")){
+					success++;
+					console.log("success : ", success);
+					
+					if(boom + success*2 == model.length){
+						$.ajax({
+							success : function(){
+								alert("stage clear");
+							}
+						});
+						// 게임종료
+						console.log("횟수("+total+"번"+"), 스테이지 종료 시간("+timerNum+"초"+")");
+						
+						// 새로운 스테이지 -----------------------------------------------------------
+						stage ++;
+						success = 0;
+						boom ++;
+						console.log(boom);
+						
+						if(stage < 4){		
+							// stage2 이면 model2, stage3 이면 model3
+							console.log("stage : ", stage);
+							if(stage == 2){
+								model = model2;
+							} else if(stage == 3){
+								model = model3;
+							}
+						console.log("model.length : ", model.length);
+						
+						// 모델 셔플
+						for(let i=0; i<100000; i++){
+							let ran = Math.floor(Math.random()*model.length);
+							let tmp = model[0];
+							model[0] = model[ran];
+							model[ran] = tmp;
+						}
+						
+						// 모델 출력
+						$("#board").empty();
+						$(model).each(function(index, item){
+							if(stage == 2){
+								if(index % 5 == 0){
+									$("#board").append("<tr></tr>")
+								}
+								$("#board").append("<td oncontextmenu='return false' ondragstart='return false'><input class='pic' type='image' src='/puzzle/images/" + item + "'></td>");
+							} else if (stage == 3){
+								if(index % 6 == 0){
+									$("#board").append("<tr></tr>")
+								}
+								$("#board").append("<td oncontextmenu='return false' ondragstart='return false'><input class='pic' type='image' src='/puzzle/images/" + item + "'></td>");
+							}
+						});
+				
+						$(".pic").each(function(){
+							// -----0.1초를 0.001로 변경할것
+							$(this).animate({opacity: 0.1}, 3000); // 이슈 : 드레그 버그 - 사진 드레그시 보임 -> 우클릭방지로 해결
+						});
+						
+						} else{
+							clearInterval(timer);
+							console.log("횟수("+total+"번"+"), 스테이지 종료 시간("+timerNum+"초"+")");
+							
+							// 서버로 최종 결과 전송.. 게임종료화면유지 or 인덱스 페이지로 이동
+							$.ajax({
+								url : "/puzzle/AddReport",
+								method : "POST",
+								data : {"memberId" : loginState, "count" : total, "timer" : timerNum},
+								success : function(){
+									alert("횟수("+total+"번"+"), 게임 종료 시간("+timerNum+"초"+")");
+									location.href = "/puzzle/index.html";
+								}
+							});
+						}
+					}
+				} else{
+					$(onePic).animate({opacity: 0.001}, 500);
+					$(twoPic).animate({opacity: 0.001}, 500);
+					$(onePic).attr("disabled", false);
+					$(twoPic).attr("disabled", false);
+				}
+				state = 0;
+			}
+		});
+		
+		// 다시하기
+		$("#reStartBtn").click(function(){
+			location.href = "/puzzle/lolPuzzle.html";
+		});
+		
+		// 메인 인덱스로
+		$("#mainBtn").click(function(){
+			location.href = "/puzzle/index.html";
+		});
+	});
+</script>
+</html>
