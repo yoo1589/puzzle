@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+	table,td{border:1px solid gray;}
+	table {border-collapse: collapse;}
+	
+	#center{
+		display: table;
+		margin: 0 auto;
+	}
+	
+	html, body
+	{
+	    height: 100%;
+	}
+	
+	body
+	{
+	    display: table;
+	    margin: 0 auto;
+	}
+</style>
+</head>
+<body>
+	<div id="center">
+		<h1>login</h1>
+	</div>
+	<table>
+		<tr>
+			<td>member_id</td>
+			<td><input id="memberId" type="text"></td>
+		</tr>
+		<tr>
+			<td>member_pw</td>
+			<td><input id="memberPw" type="password"></td>
+		</tr>
+	</table>
+	<div id="center">
+		<button id="loginBtn">login</button>
+		<button id="joinBtn">join</button> <!-- 클릭시 : location.href ="" -->
+		<button id="mainBtn">main</button>
+	</div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	// 로그인
+	$("#loginBtn").click(function(){
+		if($("#memberId").val() === "" || $("#memberPw").val() === ""){
+			alert("빈칸을 입력하세요");
+		} else{
+			$.ajax({
+				url : "/puzzle/Login",
+				method : "POST",
+				data : {"memberId" : $("#memberId").val(),
+						"memberPw" : $("#memberPw").val()},
+				success : function(){
+					alert("로그인 성공");
+					location.href = "/puzzle/index.html";
+				},
+				error : function(){
+					alert("다시 확인하세요");
+				}
+			})
+		}
+	});
+	
+	// 회원가입
+	$("#joinBtn").click(function(){
+		location.href = "/puzzle/join.html";
+	});
+	
+	// 메인 index로
+	$("#mainBtn").click(function(){
+		location.href = "/puzzle/index.html";
+	});
+	
+</script>
+</html>
