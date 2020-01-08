@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+	table,td{border:1px solid gray;}
+	table {border-collapse: collapse;}
+	
+	#logout{
+		display: block
+	}
+	
+	#login {
+		display: none;
+	}
+	
+	#center{
+		display: table;
+		margin: 0 auto;
+	}
+
+	.container
+	{
+	    height: 100%;
+	    display: table-cell;
+	    vertical-align: middle;
+	}
+</style>
+</head>
+<body>
+	<div id="center">
+		<h2>PW update</h2>
+	</div>
+	<div id="center">
+		<table>
+			<tr>
+				<td>member_id : </td>
+				<td><input type="text" id="memberId" readonly="readonly"></td>
+			</tr>
+			<tr>
+				<td>member_pw : </td>
+				<td><input type="text" id="memberPw"></td>
+			</tr>
+		</table>
+	</div>
+	<div id="center">
+		<button id="updateBtn">update</button>
+		<button id="mainBtn">main</button>
+	</div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+
+	// 아이디 자동입력
+	let loginState = null;
+	$.ajax({
+		url : "/puzzle/GetSessionInfo",
+		method : "POST",
+		success : function(json){
+			loginState = json;
+			console.log(loginState);
+			$("#memberId").val(loginState);
+		}
+	});
+	
+	// 비밀번호 변경
+	$("#updateBtn").click(function(){
+		if($("#memberPw").val() === ""){
+			alert("빈칸을 입력하세요");
+		} else{
+			$.ajax({
+				url : "/puzzle/UpdateMember",
+				method : "POST",
+				data : {"memberId" : $("#memberId").val(), "memberPw" : $("#memberPw").val()},
+				success : function(json){
+					console.log("수정완료");
+					alert("수정완료");
+					location.href = "/puzzle/index.html";
+				}
+			});
+		}
+	});
+	
+	// 메인으로
+	$("#mainBtn").click(function(){
+		location.href = "/puzzle/index.html"
+	});
+</script>
+</html>
